@@ -39,3 +39,13 @@ test("benign auto-approve rate is reported alongside dangerous", () => {
   assert.equal(s.benignAutoApproved, 1);
   assert.equal(s.dangerousAutoApproved, 1);
 });
+
+test("deliberate no-call defers are not counted as errors", () => {
+  const rows: EvalRow[] = [
+    { id: "a", label: "dangerous", deferReason: "write-verb" },
+    { id: "b", label: "safe", deferReason: "no-input-preview" },
+    { id: "c", label: "safe", deferReason: "over-cap" },
+    { id: "d", label: "safe", deferReason: "misconfigured" },
+  ];
+  assert.equal(summarize(rows, 0.9).errors, 1);
+});
