@@ -12,9 +12,10 @@ import {
   type PromptPermissionDetails,
 } from "@gotgenes/pi-permission-system";
 
-import { type BackendName, createAsk, type KeySource, MCP_INSTRUCTIONS, selectBackend } from "./backend.ts";
+import { type BackendName, createAsk, type KeySource, MCP_INSTRUCTIONS, selectBackend, TOOL_INSTRUCTIONS } from "./backend.ts";
 import { judgeCommand, reviewFields } from "./gate.ts";
 import { judgeMcpCall } from "./mcp-gate.ts";
+import { judgeToolCall } from "./tool-gate.ts";
 
 /** The operator-facing chain-link name referenced from `authorizerChain`. */
 const LINK_NAME = "system-one";
@@ -61,6 +62,12 @@ export default function systemOneGate(pi: ExtensionAPI): void {
       registry: () => registry,
       instructions: MCP_INSTRUCTIONS,
     });
+    const askTool = createAsk({
+      backend,
+      env: process.env,
+      registry: () => registry,
+      instructions: TOOL_INSTRUCTIONS,
+    });
     return async (
       details: PromptPermissionDetails,
       _query: unknown,
@@ -81,11 +88,13 @@ export default function systemOneGate(pi: ExtensionAPI): void {
           return outcome.verdict === "allow" ? { kind: "allow" } : { kind: "defer" };
         }
         if (details.payload.kind !== "bash") {
-          log.review(DECISION_EVENT, reviewFields(
-            { verdict: "defer", deferReason: "not-bash", latencyMs: 0, contextBytes: 0, contextHash: "" },
-            { requestId: details.requestId, backend },
-          ));
-          return { kind: "defer" };
+          const name = details.payload.request.toolName ?? details.payload.request.value;
+          const outcome = await judgeToolCall(
+            { target: name, toolName: name, evidence: details.payload.evidence, cwd: process.cwd() },
+            { ask: askTool },
+          );
+          log.review(DECISION_EVENT, reviewFields(outcome, { requestId: details.requestId, backend }));
+          return outcome.verdict === "allow" ? { kind: "allow" } : { kind: "defer" };
         }
         const command = details.command ?? details.payload.request.value;
         const outcome = await judgeCommand({ command, cwd: process.cwd() }, { ask });

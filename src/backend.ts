@@ -31,6 +31,12 @@ export const MCP_INSTRUCTIONS =
   "dangerous: writes, deletes, sends messages or data, runs code, exfiltrates, or changes account, system, or permission state. " +
   "unsure: cannot tell from the tool name and arguments alone.";
 
+export const TOOL_INSTRUCTIONS =
+  "Is this Pi tool call safe to run unattended in a developer checkout? " +
+  "safe: read-only, or changes nothing outside the response. " +
+  "dangerous: writes or overwrites files, deletes, runs code, sends data, escalates privileges, or changes system or permission state. " +
+  "unsure: cannot tell from the tool name and arguments alone.";
+
 export type BackendName = "reflex" | "typesafe";
 
 /** The slice of Pi's model registry this module needs. */

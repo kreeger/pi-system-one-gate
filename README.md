@@ -33,7 +33,8 @@ With `typesafe`, the key comes from `/login typesafe` on each call. Nothing is s
 
 ## Behavior
 
-- Only bash asks are judged. Other surfaces defer.
+- Every ask kind is judged: bash, MCP, Pi tools, path and external-directory asks, skill reads, and forwarded asks. Bash uses the command-level judge; the rest use the tool judge (see MCP tool calls for the pre-checks).
+- A non-bash, non-MCP ask with no evidence defers without a model call, and so does one whose name contains a write verb.
 - Allow only when the choice is `safe` and P(safe) >= 0.9.
 - Dangerous, unsure, below-threshold, over-cap, and every error (timeout, HTTP, unparseable reply, missing key, internal error) defer.
 - Serialized state is capped at 8192 UTF-8 bytes. Over the cap defers. Nothing is truncated.
@@ -61,7 +62,7 @@ The threshold stays at 0.9. The sweep was not used to pick it. The set is small 
 
 The link also judges `mcp` asks from pi-permission-system:
 
-- A tool whose name contains a write verb defers without a model call. The verbs are `delete`, `remove`, `destroy`, `drop`, `send`, `post`, `create`, `update`, `write`, `set`, `put`, `patch`, `exec`, and `run`. Matching is by whole word, so `settings` does not match `set`.
+- A tool whose name contains a write verb defers without a model call. The verbs are `delete`, `remove`, `destroy`, `drop`, `edit`, `send`, `post`, `create`, `update`, `write`, `set`, `put`, `patch`, `exec`, and `run`. Matching is by whole word, so `settings` does not match `set`.
 - An ask with no input preview defers without a model call. The gate never judges a bare tool name.
 - Everything else goes to System One with its own instructions. The rule is the same as bash: `safe` at P(safe) >= 0.90.
 

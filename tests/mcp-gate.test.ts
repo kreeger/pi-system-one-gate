@@ -29,6 +29,8 @@ test("writeVerbOf matches a write verb as a whole token", () => {
   assert.equal(writeVerbOf("github_delete_issue"), "delete");
   assert.equal(writeVerbOf("mcp__srv__deleteIssue"), "delete");
   assert.equal(writeVerbOf("Create_Item"), "create");
+  assert.equal(writeVerbOf("edit"), "edit");
+  assert.equal(writeVerbOf("notes_edit_page"), "edit");
   assert.equal(writeVerbOf("get_settings"), undefined); // "set" is not a token of "settings"
   assert.equal(writeVerbOf("sender_list"), undefined); // "send" is not a token of "sender"
   assert.equal(writeVerbOf("search_code"), undefined);

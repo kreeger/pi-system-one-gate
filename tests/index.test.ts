@@ -153,25 +153,49 @@ test("registers nothing when SYSTEM_ONE_GATE_BACKEND is unrecognized", () => {
   assert.deepEqual(svc.registrations, []);
 });
 
-test("a non-bash ask defers as not-bash and never calls the backend", async () => {
+test("a safe tool ask with input evidence returns allow and reaches the backend", async () => {
+  const svc = fakeService();
+  const pi = startWith(svc);
+  const { fn, calls } = fakeFetch("safe", 0.95);
+  globalThis.fetch = fn;
+  pi.emitChannel(PERMISSIONS_READY_CHANNEL, { sessionId: SESSION });
+  const { log, records } = fakeLog();
+
+  const verdict = await svc.link("system-one")!(
+    {
+      requestId: "req-2",
+      payload: {
+        kind: "tool",
+        request: { value: "read", toolName: "read" },
+        evidence: [{ label: "input", text: '{"path":"a.ts"}', detail: null }],
+      },
+    } as never,
+    {} as never,
+    log,
+  );
+
+  assert.deepEqual(verdict, { kind: "allow" });
+  assert.equal(calls.length, 1);
+  assert.equal(records[0].fields.verdict, "allow");
+});
+
+test("a tool ask with no evidence defers and never calls the backend", async () => {
   const svc = fakeService();
   const pi = startWith(svc);
   const { fn, calls } = fakeFetch("safe", 0.99);
   globalThis.fetch = fn;
   pi.emitChannel(PERMISSIONS_READY_CHANNEL, { sessionId: SESSION });
-  const authorize = svc.link("system-one");
-  assert.ok(authorize);
   const { log, records } = fakeLog();
 
-  const verdict = await authorize(
-    { requestId: "req-2", payload: { kind: "tool", request: { value: "read" } } } as never,
+  const verdict = await svc.link("system-one")!(
+    { requestId: "req-2", payload: { kind: "tool", request: { value: "read" }, evidence: [] } } as never,
     {} as never,
     log,
   );
 
   assert.deepEqual(verdict, { kind: "defer" });
   assert.equal(calls.length, 0);
-  assert.equal(records[0].fields.deferReason, "not-bash");
+  assert.equal(records[0].fields.deferReason, "no-input-preview");
 });
 
 test("a safe bash ask returns allow and logs one entry", async () => {

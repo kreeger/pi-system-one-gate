@@ -12,6 +12,7 @@ export const WRITE_VERBS: readonly string[] = [
   "remove",
   "destroy",
   "drop",
+  "edit",
   "send",
   "post",
   "create",

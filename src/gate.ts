@@ -47,7 +47,6 @@ export type DeferReason =
   | "unparseable"
   | "misconfigured"
   | "internal-error"
-  | "not-bash"
   | "no-input-preview"
   | "write-verb";
 
