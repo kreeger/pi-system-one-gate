@@ -4,13 +4,11 @@ A Pi authorizer chain link for `pi-permission-system`. When a bash command would
 
 ## Requirements
 
-**`@gotgenes/pi-permission-system` is a hard dependency.** This package imports it at load time and registers its link through it, so it cannot run without it. Install it first:
+**`@gotgenes/pi-permission-system` is a hard dependency.** This package imports its API at load time and registers its link through it. Installing this package installs that API package too, but the `pi-permission-system` extension itself must also be installed in Pi, or the link never registers and nothing here takes effect:
 
 ```sh
 pi install npm:@gotgenes/pi-permission-system
 ```
-
-Without it, Pi fails to load this extension, and nothing else in this package works.
 
 The link is registered as `system-one`. It does nothing until you name it:
 
