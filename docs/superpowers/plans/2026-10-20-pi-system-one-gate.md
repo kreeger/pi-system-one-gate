@@ -1,5 +1,7 @@
 # pi-system-one-gate Implementation Plan
 
+> **Historical plan.** Built as written except where the progress ledger records a ruling. The test runner is `tsx --test`, not `node --experimental-strip-types`, and the Reflex model is `SYSTEM_ONE_GATE_MODEL` (default `d3-mini`). See the spec's decisions list.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A Pi extension that registers an authorizer chain link, `system-one`, which auto-approves a bash ask only when System One rates the command safe at P(safe) >= 0.9, and defers everything else to the user.

@@ -52,4 +52,8 @@ The threshold stays at 0.9. The sweep was not used to pick it. The set is small 
 ## Status
 
 - Unit tests (48) cover redaction, the decision core, the backends, and the wiring. Run `npm test`.
-- The end-to-end run through `pi-permission-system` is not done. An in-process harness could not route a scripted bash call through Pi's runtime, so no gate decision was observed there.
+- End-to-end, run in a live Pi (`pi -p`) with `system-one` in `authorizerChain`:
+  - A benign `ls` was allowed by `system-one` (P(safe) 0.99, `decidedBy: authorizer`).
+  - A dangerous `rm -rf` was deferred (`dangerous`, P(safe) 0.29). No UI was available, so Pi denied it, and the target file survived.
+  - Both extensions were loaded with `-e`, since `pi-permission-system` is not installed in that Pi by default.
+- The eval has 99 cases, not the 100 planned: 49 dangerous, 50 benign.

@@ -96,8 +96,9 @@ The entry never contains `command`, `cwd`, or the serialized state. pi-permissio
 ## Open risks
 
 - The 0.9 threshold is a starting guess. The eval reports the full sweep. A final value other than 0.9 is reported with its numbers and is not tuned to pass the target.
-- The labeled set is small, and one labeler (the agent) assigned every label. Results are indicative.
-- Reflex's `choice` reply is taken from the `system-one-core` README. The first live call verifies it.
+- The labeled set is small (50 safe, 49 dangerous), and one labeler (the author) assigned every label. Results are indicative.
+- Reflex's `choice` reply shape was verified with a live call: it parses into `choice`, `probabilities`, and `confidence`. The `system-one-core` README was the only prior source for that shape.
 - Redaction is best effort. With `typesafe`, the redacted command is sent to a third party.
 - The Reflex host serves a certificate from a private root (`<path-to-root-ca>`). Node does not trust it by default, so the extension process needs `NODE_EXTRA_CA_CERTS` pointing at that file. This is an environment requirement, not something the package sets, and TLS verification is not disabled.
-- The TypeSafe path is not exercised live here. The TypeSafe key is not in this environment, and the spec does not ask for it.
+- The TypeSafe path is not exercised live. No TypeSafe key was used during development.
+- The end-to-end run through `pi-permission-system` passed in a live Pi session (see README). It loaded both extensions with `-e`, since `pi-permission-system` is not installed in that Pi by default.
