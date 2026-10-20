@@ -25,10 +25,8 @@ export const MAX_CONTEXT_BYTES = 8192;
 
 export type GateChoice = "safe" | "dangerous" | "unsure";
 
-export interface GateState {
-  command: string;
-  cwd: string;
-}
+/** A type alias, not an interface: System One's JsonValue needs an implicit index signature. */
+export type GateState = { command: string; cwd: string };
 
 export type AskFn = (state: GateState) => Promise<ChoiceAnswer<GateChoice>>;
 
