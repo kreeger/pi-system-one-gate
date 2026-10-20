@@ -2,6 +2,16 @@
 
 A Pi authorizer chain link for `pi-permission-system`. When a bash command would prompt you, it asks System One whether the command is safe. It auto-approves only commands rated safe at P(safe) >= 0.9. Everything else goes to your normal prompt. The gate never denies.
 
+## Requirements
+
+**`@gotgenes/pi-permission-system` is a hard dependency.** This package imports it at load time and registers its link through it, so it cannot run without it. Install it first:
+
+```sh
+pi install npm:@gotgenes/pi-permission-system
+```
+
+Without it, Pi fails to load this extension, and nothing else in this package works.
+
 The link is registered as `system-one`. It does nothing until you name it:
 
 ```jsonc
