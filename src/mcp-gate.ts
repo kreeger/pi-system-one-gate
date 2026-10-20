@@ -60,7 +60,10 @@ export async function judgeMcpCall(
 
   const rawInput = mcpInputOf(input.evidence);
   if (rawInput === undefined) return preCheckDefer("no-input-preview");
-  if (writeVerbOf(input.toolName) !== undefined) return preCheckDefer("write-verb");
+  // A proxied call gates under the proxy's name, so the real tool name is in the target.
+  if (writeVerbOf(input.toolName) !== undefined || writeVerbOf(input.target) !== undefined) {
+    return preCheckDefer("write-verb");
+  }
 
   return judgeState(
     {

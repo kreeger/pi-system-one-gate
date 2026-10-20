@@ -138,3 +138,13 @@ test("judgeMcpCall judges a state of exactly 8192 bytes and defers 8193 over-cap
   assert.equal(over.calls.length, 0);
   assert.equal(out.deferReason, "over-cap");
 });
+
+test("judgeMcpCall checks the target too, so a proxied write verb defers", async () => {
+  const { ask, calls } = fakeAsk(answer("safe", 0.99));
+  const out = await judgeMcpCall(
+    { target: "srv_delete_issue", toolName: "mcp", evidence: [{ label: "input", text: "{}" }], cwd: "/w" },
+    { ask },
+  );
+  assert.equal(out.deferReason, "write-verb");
+  assert.equal(calls.length, 0);
+});
