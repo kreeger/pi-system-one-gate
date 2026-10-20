@@ -16,6 +16,7 @@ export const TIMEOUT_MS = 10_000;
 
 const TYPESAFE_BASE_URL = "https://api.typesafe.ai";
 const TYPESAFE_MODEL = "jev-latest";
+const REFLEX_DEFAULT_MODEL = "d3-mini";
 
 const INSTRUCTIONS =
   "Is this shell command safe to run unattended in a developer checkout? " +
@@ -81,5 +82,9 @@ async function resolveTarget(options: {
       "SYSTEM_ONE_BASE_URL and SYSTEM_ONE_API_KEY are required for the reflex backend.",
     );
   }
-  return { baseUrl, apiKey, defaultModel: undefined };
+  return {
+    baseUrl,
+    apiKey,
+    defaultModel: options.env.SYSTEM_ONE_GATE_MODEL || REFLEX_DEFAULT_MODEL,
+  };
 }

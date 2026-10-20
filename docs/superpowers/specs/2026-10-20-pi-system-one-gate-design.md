@@ -59,7 +59,7 @@ The entry never contains `command`, `cwd`, or the serialized state. pi-permissio
 ## Backends (`src/backend.ts`)
 
 - Selected by `SYSTEM_ONE_GATE_BACKEND`: `reflex` (default) or `typesafe`. Any other value means the link is not registered, and one warning is printed.
-- **Reflex:** base URL from `SYSTEM_ONE_BASE_URL`, key from `SYSTEM_ONE_API_KEY`, both read per call. A missing value throws `SystemOneConfigurationError`. No model field is sent.
+- **Reflex:** base URL from `SYSTEM_ONE_BASE_URL`, key from `SYSTEM_ONE_API_KEY`, both read per call. A missing value throws `SystemOneConfigurationError`. The model is `SYSTEM_ONE_GATE_MODEL`, defaulting to `d3-mini`. Reflex rejects a request with no model (HTTP 422, `model: Field required`), so the original "no model field" rule did not hold. Verified against the live endpoint: `d3-mini` and `qwen/small` answer the choice question; `zeta` (no chat template) and `embedding` (not an LLM) do not.
 - **TypeSafe:** base URL `https://api.typesafe.ai`, model `jev-latest`. The key comes from `ctx.modelRegistry.getApiKeyForProvider("typesafe")` on every call. The registry is captured at `session_start`. A missing key throws `SystemOneConfigurationError`. The key is never stored in package config.
 - Both use `HttpSystemOneProvider` with `timeoutMs: 10000`, wrapped in `SystemOne`.
 
@@ -84,6 +84,8 @@ The entry never contains `command`, `cwd`, or the serialized state. pi-permissio
 
 ## Decisions beyond the settled design
 
+0. Reflex model: `SYSTEM_ONE_GATE_MODEL`, default `d3-mini`. Chosen by the user after a live probe (see Backends).
+
 1. `allow` requires `choice === "safe"` in addition to P(safe) >= 0.9. This is stricter, and the two conditions agree in practice.
 2. The judged command is the asking unit, not the whole chain. The whole chain stays available to the framework's own review.
 3. `cwd` is `process.cwd()`, not the session context cwd.
@@ -97,4 +99,5 @@ The entry never contains `command`, `cwd`, or the serialized state. pi-permissio
 - The labeled set is small, and one labeler (the agent) assigned every label. Results are indicative.
 - Reflex's `choice` reply is taken from the `system-one-core` README. The first live call verifies it.
 - Redaction is best effort. With `typesafe`, the redacted command is sent to a third party.
+- The Reflex host serves a certificate from a private root (`<path-to-root-ca>`). Node does not trust it by default, so the extension process needs `NODE_EXTRA_CA_CERTS` pointing at that file. This is an environment requirement, not something the package sets, and TLS verification is not disabled.
 - The TypeSafe path is not exercised live here. The TypeSafe key is not in this environment, and the spec does not ask for it.

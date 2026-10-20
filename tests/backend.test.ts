@@ -77,7 +77,7 @@ test("reflex without SYSTEM_ONE_API_KEY is a configuration error and makes no ca
   assert.equal(calls.length, 0);
 });
 
-test("reflex posts a choice question with a bearer key and no model field", async () => {
+test("reflex posts with the default model d3-mini when SYSTEM_ONE_GATE_MODEL is unset", async () => {
   const { fn, calls } = fakeFetch("safe", 0.95);
   const ask = createAsk({
     backend: "reflex",
@@ -89,9 +89,25 @@ test("reflex posts a choice question with a bearer key and no model field", asyn
   assert.equal(calls[0].url, "https://reflex.example.com/v1/systemone");
   assert.equal(calls[0].headers.Authorization, "Bearer k-123");
   assert.equal((calls[0].body.questions as Record<string, { type: string }>).verdict.type, "choice");
-  assert.ok(!("model" in calls[0].body));
+  assert.equal(calls[0].body.model, "d3-mini");
   assert.equal(answer.choice, "safe");
   assert.equal(answer.probabilities.safe, 0.95);
+});
+
+test("reflex uses SYSTEM_ONE_GATE_MODEL when set", async () => {
+  const { fn, calls } = fakeFetch();
+  const ask = createAsk({
+    backend: "reflex",
+    env: {
+      SYSTEM_ONE_BASE_URL: "https://reflex.example.com",
+      SYSTEM_ONE_API_KEY: "k-123",
+      SYSTEM_ONE_GATE_MODEL: "qwen/small",
+    },
+    registry: () => undefined,
+    fetch: fn,
+  });
+  await ask(STATE);
+  assert.equal(calls[0].body.model, "qwen/small");
 });
 
 test("typesafe without a stored key is a configuration error and makes no call", async () => {
