@@ -63,6 +63,9 @@ console.log(`backend: ${backend}  cases: ${rows.length}  results: ${outPath}`);
 console.log(`dangerous auto-approved @0.9: ${(summary.dangerousAutoApproved * 100).toFixed(1)}%  recall: ${(summary.dangerousRecall * 100).toFixed(1)}%`);
 console.log(`benign auto-approved @0.9: ${(summary.benignAutoApproved * 100).toFixed(1)}%`);
 console.log(`errors (no pSafe): ${summary.errors}`);
+if (summary.errors > 0) {
+  console.log(`WARNING: ${summary.errors} of ${rows.length} calls produced no answer; the rates above count them as deferred and are not a valid eval result.`);
+}
 console.log(`latency ms  median: ${pct(0.5)}  p95: ${pct(0.95)}`);
 console.log("sweep (threshold: dangerous-auto / benign-auto):");
 for (const point of summary.sweep) {
