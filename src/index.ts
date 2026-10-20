@@ -12,8 +12,9 @@ import {
   type PromptPermissionDetails,
 } from "@gotgenes/pi-permission-system";
 
-import { type BackendName, createAsk, type KeySource, selectBackend } from "./backend.ts";
+import { type BackendName, createAsk, type KeySource, MCP_INSTRUCTIONS, selectBackend } from "./backend.ts";
 import { judgeCommand, reviewFields } from "./gate.ts";
+import { judgeMcpCall } from "./mcp-gate.ts";
 
 /** The operator-facing chain-link name referenced from `authorizerChain`. */
 const LINK_NAME = "system-one";
@@ -54,12 +55,31 @@ export default function systemOneGate(pi: ExtensionAPI): void {
 
   function authorize(backend: BackendName) {
     const ask = createAsk({ backend, env: process.env, registry: () => registry });
+    const askMcp = createAsk({
+      backend,
+      env: process.env,
+      registry: () => registry,
+      instructions: MCP_INSTRUCTIONS,
+    });
     return async (
       details: PromptPermissionDetails,
       _query: unknown,
       log: { review(event: string, fields?: Record<string, unknown>): void },
     ): Promise<AuthorizerVerdict> => {
       try {
+        if (details.payload.kind === "mcp") {
+          const outcome = await judgeMcpCall(
+            {
+              target: details.payload.request.value,
+              toolName: details.payload.request.toolName ?? details.payload.request.value,
+              evidence: details.payload.evidence,
+              cwd: process.cwd(),
+            },
+            { ask: askMcp },
+          );
+          log.review(DECISION_EVENT, reviewFields(outcome, { requestId: details.requestId, backend }));
+          return outcome.verdict === "allow" ? { kind: "allow" } : { kind: "defer" };
+        }
         if (details.payload.kind !== "bash") {
           log.review(DECISION_EVENT, reviewFields(
             { verdict: "defer", deferReason: "not-bash", latencyMs: 0, contextBytes: 0, contextHash: "" },
