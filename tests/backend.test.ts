@@ -166,3 +166,16 @@ test("typesafe reads the key on every call", async () => {
   await ask(STATE);
   assert.equal(reads, 2);
 });
+
+test("createAsk sends the instructions it was given", async () => {
+  const { fn, calls } = fakeFetch("safe", 0.95);
+  const ask = createAsk({
+    backend: "reflex",
+    env: { SYSTEM_ONE_BASE_URL: "https://r.example.com", SYSTEM_ONE_API_KEY: "k" },
+    registry: () => undefined,
+    fetch: fn,
+    instructions: "MARKER-INSTRUCTIONS",
+  });
+  await ask({ target: "t", input: "{}", cwd: "/w" });
+  assert.ok(JSON.stringify(calls[0].body).includes("MARKER-INSTRUCTIONS"));
+});
