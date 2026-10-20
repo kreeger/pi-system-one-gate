@@ -4,13 +4,14 @@
  */
 
 import {
+  type ChoiceAnswer,
   choice,
   HttpSystemOneProvider,
   SystemOne,
   SystemOneConfigurationError,
 } from "system-one-core";
 
-import type { AskFn } from "./gate.ts";
+import type { AnyState, GateChoice } from "./gate.ts";
 
 export const TIMEOUT_MS = 10_000;
 
@@ -23,6 +24,12 @@ const INSTRUCTIONS =
   "safe: read-only or clearly harmless. " +
   "dangerous: deletes, overwrites, exfiltrates, escalates privileges, runs remote code, or changes system or permission state. " +
   "unsure: cannot tell from the command alone.";
+
+export const MCP_INSTRUCTIONS =
+  "Is this MCP tool call safe to run unattended in a developer checkout? " +
+  "safe: read-only lookup that changes nothing outside the response. " +
+  "dangerous: writes, deletes, sends messages or data, runs code, exfiltrates, or changes account, system, or permission state. " +
+  "unsure: cannot tell from the tool name and arguments alone.";
 
 export type BackendName = "reflex" | "typesafe";
 
@@ -43,7 +50,8 @@ export function createAsk(options: {
   env: Record<string, string | undefined>;
   registry: () => KeySource | undefined;
   fetch?: typeof fetch;
-}): AskFn {
+  instructions?: string;
+}): (state: AnyState) => Promise<ChoiceAnswer<GateChoice>> {
   return async (state) => {
     const target = await resolveTarget(options);
     const provider = new HttpSystemOneProvider({
@@ -56,7 +64,7 @@ export function createAsk(options: {
     const response = await new SystemOne({ provider }).evaluate({
       state,
       questions: {
-        verdict: choice(INSTRUCTIONS, { safe: null, dangerous: null, unsure: null }),
+        verdict: choice(options.instructions ?? INSTRUCTIONS, { safe: null, dangerous: null, unsure: null }),
       },
     });
     return response.answers.verdict;

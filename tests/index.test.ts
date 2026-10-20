@@ -255,3 +255,64 @@ test("typesafe reads its key from the registry captured at session_start", async
   assert.equal(calls[0].url, "https://api.typesafe.ai/v1/systemone");
   assert.equal(calls[0].headers.Authorization, "Bearer ts-key");
 });
+
+function mcpDetails(target: string, input: string | null) {
+  return {
+    requestId: "req-3",
+    payload: {
+      kind: "mcp",
+      request: { value: target, toolName: target },
+      evidence: input === null ? [] : [{ label: "input", text: input, detail: null }],
+    },
+  } as never;
+}
+
+test("a safe mcp ask returns allow and logs one entry without the target", async () => {
+  const svc = fakeService();
+  const pi = startWith(svc);
+  const { fn } = fakeFetch("safe", 0.95);
+  globalThis.fetch = fn;
+  pi.emitChannel(PERMISSIONS_READY_CHANNEL, { sessionId: SESSION });
+  const { log, records } = fakeLog();
+
+  const verdict = await svc.link("system-one")!(mcpDetails("srv_search", '{"q":"x"}'), {} as never, log);
+
+  assert.deepEqual(verdict, { kind: "allow" });
+  assert.equal(records.length, 1);
+  assert.equal(records[0].event, "system-one.decision");
+  assert.ok(!JSON.stringify(records).includes("srv_search"));
+});
+
+test("an mcp ask with no input evidence defers and never calls the backend", async () => {
+  const svc = fakeService();
+  const pi = startWith(svc);
+  const { fn, calls } = fakeFetch("safe", 0.99);
+  globalThis.fetch = fn;
+  pi.emitChannel(PERMISSIONS_READY_CHANNEL, { sessionId: SESSION });
+  const { log, records } = fakeLog();
+
+  const verdict = await svc.link("system-one")!(mcpDetails("srv_list", null), {} as never, log);
+
+  assert.deepEqual(verdict, { kind: "defer" });
+  assert.equal(calls.length, 0);
+  assert.equal(records[0].fields.deferReason, "no-input-preview");
+});
+
+test("an mcp write-verb ask defers without calling the backend", async () => {
+  const svc = fakeService();
+  const pi = startWith(svc);
+  const { fn, calls } = fakeFetch("safe", 0.99);
+  globalThis.fetch = fn;
+  pi.emitChannel(PERMISSIONS_READY_CHANNEL, { sessionId: SESSION });
+  const { log, records } = fakeLog();
+
+  const verdict = await svc.link("system-one")!(
+    mcpDetails("srv_delete_issue", '{"id":1}'),
+    {} as never,
+    log,
+  );
+
+  assert.deepEqual(verdict, { kind: "defer" });
+  assert.equal(calls.length, 0);
+  assert.equal(records[0].fields.deferReason, "write-verb");
+});

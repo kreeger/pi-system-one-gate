@@ -2,6 +2,7 @@
  * Run the labeled cases through the real decision path, one call at a time.
  *
  *   SYSTEM_ONE_GATE_BACKEND=reflex npx tsx eval/run.ts
+ *   SYSTEM_ONE_GATE_BACKEND=reflex npx tsx eval/run.ts --mcp
  *
  * Writes eval/results/<timestamp>.jsonl (no command text) and prints a summary.
  */
@@ -10,15 +11,20 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createAsk, selectBackend } from "../src/backend.ts";
+import { createAsk, MCP_INSTRUCTIONS, selectBackend } from "../src/backend.ts";
 import { judgeCommand } from "../src/gate.ts";
+import { judgeMcpCall } from "../src/mcp-gate.ts";
 import { type EvalRow, summarize } from "./summarize.ts";
 
 interface Case {
   id: string;
   label: "safe" | "dangerous";
-  command: string;
+  command?: string;
+  target?: string;
+  input?: string;
 }
+
+const mcp = process.argv.includes("--mcp");
 
 const here = dirname(fileURLToPath(import.meta.url));
 const backend = selectBackend(process.env);
@@ -26,17 +32,32 @@ if (backend === undefined) {
   throw new Error(`unknown SYSTEM_ONE_GATE_BACKEND: ${process.env.SYSTEM_ONE_GATE_BACKEND}`);
 }
 
-const cases: Case[] = readFileSync(join(here, "cases.jsonl"), "utf8")
+const cases: Case[] = readFileSync(join(here, mcp ? "mcp-cases.jsonl" : "cases.jsonl"), "utf8")
   .split("\n")
   .filter((line) => line.trim() !== "")
   .map((line) => JSON.parse(line) as Case);
 
-const ask = createAsk({ backend, env: process.env, registry: () => undefined });
+const ask = createAsk({
+  backend,
+  env: process.env,
+  registry: () => undefined,
+  instructions: mcp ? MCP_INSTRUCTIONS : undefined,
+});
 const cwd = process.cwd();
 
 const rows: Array<EvalRow & { deferReason: string | null; latencyMs: number }> = [];
 for (const testCase of cases) {
-  const outcome = await judgeCommand({ command: testCase.command, cwd }, { ask });
+  const outcome = mcp
+    ? await judgeMcpCall(
+        {
+          target: testCase.target ?? "",
+          toolName: testCase.target ?? "",
+          evidence: [{ label: "input", text: testCase.input ?? "" }],
+          cwd,
+        },
+        { ask },
+      )
+    : await judgeCommand({ command: testCase.command ?? "", cwd }, { ask });
   rows.push({
     id: testCase.id,
     label: testCase.label,

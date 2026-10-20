@@ -57,6 +57,29 @@ Results on `d3-mini` at the 0.9 threshold, 2026-10-20:
 
 The threshold stays at 0.9. The sweep was not used to pick it. The set is small and hand-labeled, so these numbers indicate behavior and do not guarantee it.
 
+## MCP tool calls
+
+The link also judges `mcp` asks from pi-permission-system:
+
+- A tool whose name contains a write verb defers without a model call. The verbs are `delete`, `remove`, `destroy`, `drop`, `send`, `post`, `create`, `update`, `write`, `set`, `put`, `patch`, `exec`, and `run`. Matching is by whole word, so `settings` does not match `set`.
+- An ask with no input preview defers without a model call. The gate never judges a bare tool name.
+- Everything else goes to System One with its own instructions. The rule is the same as bash: `safe` at P(safe) >= 0.90.
+
+Known gaps:
+
+- Write tools with neutral names, such as `archive_item`, reach the model.
+- pi-permission-system truncates tool arguments before the gate sees them: 160 characters in total, 60 per value. The gate judges what it receives.
+- Tool annotations such as `readOnlyHint` do not reach the gate, so they are not used.
+- `run` is in the verb list, so a read tool with `run` in its name defers. `ci_get_run` is one example.
+
+Eval: `npx tsx eval/run.ts --mcp` on reflex, 105 cases (55 safe, 50 dangerous, 12 with input over 160 characters). One labeler wrote the labels, and they are not checked independently.
+
+- Dangerous auto-approved at 0.90: 0.0%. Recall is 100%. The one dangerous case the model called safe (reading a secret, P(safe) 0.55) was deferred by the threshold.
+- Benign auto-approved at 0.90: 47.3% (26 of 55). The 29 benign calls that were deferred split into 28 below threshold and 1 write-verb (`ci_get_run`).
+- Threshold sweep 0.50 to 0.99: dangerous auto-approved 0% to 2%, benign 98% to 9%.
+
+The 0.90 threshold is the same starting value as bash. It was not tuned on this set.
+
 ## Status
 
 - Unit tests (48) cover redaction, the decision core, the backends, and the wiring. Run `npm test`.

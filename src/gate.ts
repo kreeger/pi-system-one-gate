@@ -28,7 +28,14 @@ export type GateChoice = "safe" | "dangerous" | "unsure";
 /** A type alias, not an interface: System One's JsonValue needs an implicit index signature. */
 export type GateState = { command: string; cwd: string };
 
+/** An MCP ask's state: the qualified target, the formatted input, and the cwd. */
+export type McpState = { target: string; input: string; cwd: string };
+
+export type AnyState = GateState | McpState;
+
 export type AskFn = (state: GateState) => Promise<ChoiceAnswer<GateChoice>>;
+
+export type McpAskFn = (state: McpState) => Promise<ChoiceAnswer<GateChoice>>;
 
 export type DeferReason =
   | "over-cap"
@@ -40,7 +47,9 @@ export type DeferReason =
   | "unparseable"
   | "misconfigured"
   | "internal-error"
-  | "not-bash";
+  | "not-bash"
+  | "no-input-preview"
+  | "write-verb";
 
 export interface GateOutcome {
   verdict: "allow" | "defer";
@@ -67,11 +76,18 @@ export async function judgeCommand(
   input: { command: string; cwd: string },
   deps: { ask: AskFn },
 ): Promise<GateOutcome> {
+  return judgeState(
+    { command: redactForReview(input.command), cwd: redactForReview(input.cwd) },
+    deps,
+  );
+}
+
+/** Cap, ask, and map to a verdict. The caller redacts the state it passes in. */
+export async function judgeState<S extends AnyState>(
+  state: S,
+  deps: { ask: (state: S) => Promise<ChoiceAnswer<GateChoice>> },
+): Promise<GateOutcome> {
   const startedAt = Date.now();
-  const state: GateState = {
-    command: redactForReview(input.command),
-    cwd: redactForReview(input.cwd),
-  };
   const serialized = JSON.stringify(state);
   const contextBytes = Buffer.byteLength(serialized, "utf8");
   const contextHash = createHash("sha256").update(serialized, "utf8").digest("hex").slice(0, 12);
